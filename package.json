@@ -1,0 +1,25 @@
+{
+  "name": "nodejs-template",
+  "version": "1.0.0",
+  "description": "This is a description.",
+  "main": "server.js",
+  "author": "Tundra Fizz",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "latest",
+    "ejs": "latest",
+    "express": "latest",
+    "html-entities": "^1.2.1",
+    "mysql": "^2.16.0",
+    "node-sass-middleware": "latest"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "nodemon": "nodemon server.js"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TundraFizz/NodeJS-Template.git"
+  }
+}
