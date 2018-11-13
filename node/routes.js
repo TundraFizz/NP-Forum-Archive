@@ -9,70 +9,61 @@ app.post("/add-person", function(req, res){
 
 app.get("/", function(req, res){
   var sql = `
-  SELECT ??, ??, p.* FROM topics t
-  JOIN members m ON m.member_id = t.starter_id
-  JOIN posts p ON p.topic_id = t.tid
-  LIMIT 2
+  SELECT z.* FROM (
+    SELECT
+    t.threadId, t.threadTitle, t.threadStartDate,
+    p1.threadPostCount,
+    t.threadAuthorId, m1.threadAuthorGroupId, m1.threadAuthorName,
+    p1.postAuthorPostId, p2.postAuthorId, m2.postAuthorGroupId, m2.postAuthorName
+    FROM (
+      SELECT tid AS threadId, title AS threadTitle, starter_id AS threadAuthorId, start_date AS threadStartDate
+      FROM topics
+      ORDER BY threadId
+      DESC LIMIT 3
+    ) AS t
+    JOIN (
+      SELECT COUNT(pid) AS threadPostCount, topic_id AS threadId, MAX(pid) AS postAuthorPostId
+      FROM posts
+      GROUP BY threadId
+    ) AS p1
+    ON t.threadId = p1.threadId
+    JOIN (
+      SELECT pid AS postId, author_id AS postAuthorId
+      FROM posts
+    ) AS p2
+    ON p1.postAuthorPostId = p2.postId
+    JOIN (
+      SELECT member_group_id AS threadAuthorGroupId, members_display_name AS threadAuthorName, member_id
+      FROM members
+    ) AS m1
+    ON m1.member_id = t.threadAuthorId
+    JOIN (
+      SELECT member_group_id AS postAuthorGroupId, members_display_name AS postAuthorName, member_id
+      FROM members
+    ) AS m2
+    ON m2.member_id = p2.postAuthorId
+  ) AS z;
   `;
-  var args = [
-    ["t.tid", "t.title", "t.state", "t.starter_id", "t.start_date", "t.views", "t.forum_id", "t.pinned"],
-    ["m.name"]
-  ];
 
-  /*
-    Title
-    Date Created
-    Post Count
-    Last Poster Name
-    Last Poster Avatar
-    Last Poster Date
-  */
-
-SELECT * FROM (
-    SELECT t.*, m.name FROM (
-        SELECT tid, starter_id
-        FROM topics
-        ORDER BY tid DESC
-        LIMIT 3
-    ) AS t
-    JOIN members m ON m.member_id = t.starter_id
-) AS t
-
-SELECT * FROM (
-    SELECT t.*, m.members_display_name AS creatorName, m.member_group_id AS creatorAuthorGroupId FROM (
-        SELECT tid AS threadId, start_date AS threadStartDate, title, starter_id AS creatorId
-        FROM topics
-        ORDER BY tid DESC
-        LIMIT 3
-    ) AS t
-    JOIN members m ON m.member_id = t.creatorId
-) AS t
-
-SELECT b.recentPostId, p.author_id AS recentAuthorId,
-FROM posts p
-INNER JOIN (
-    SELECT MAX(pid) recentPostId
-    FROM posts
-    GROUP BY topic_id
-) b ON b.recentPostId = p.pid
-ORDER BY topic_id DESC;
-
-SELECT MAX(pid) as recentPostId, topic_id AS threadId, author_id AS recentAuthorId, post_date AS recentPostDate, m.name AS recentAuthorName, m.member_group_id AS recentAuthorGroupId
-FROM posts p
-JOIN members m ON m.member_id = p.author_id
-GROUP BY topic_id
-ORDER BY threadId DESC;
-
-  db.query(sql, args, function(err, rows){
-    console.log(err);
-    console.log(rows);
-
-    var title      = rows[0]["title"];
-    var starter_id = rows[0]["name"];
+  db.query(sql, function(err, rows){
+    for(var i in rows){
+      var threadId            = rows[i]["threadId"];
+      var threadTitle         = rows[i]["threadTitle"];
+      var threadStartDate     = rows[i]["threadStartDate"];
+      var threadPostCount     = rows[i]["threadPostCount"];
+      var threadAuthorId      = rows[i]["threadAuthorId"];
+      var threadAuthorGroupId = rows[i]["threadAuthorGroupId"];
+      var threadAuthorName    = rows[i]["threadAuthorName"];
+      var postAuthorPostId    = rows[i]["postAuthorPostId"];
+      var postAuthorId        = rows[i]["postAuthorId"];
+      var postAuthorGroupId   = rows[i]["postAuthorGroupId"];
+      var postAuthorName      = rows[i]["postAuthorName"];
+      console.log(rows[i]);
+    }
 
     res.render("index.ejs", {
-      "title"     : entities.decode(title),
-      "starter_id": starter_id
+      "title"     : entities.decode(threadTitle),
+      "starter_id": threadAuthorId
     });
   });
 });
